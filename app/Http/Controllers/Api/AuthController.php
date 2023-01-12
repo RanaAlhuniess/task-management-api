@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\API\BaseController as BaseController;
 use App\Models\User;
 use App\Http\Resources\Api\UserResource;
+
 class AuthController extends BaseController
 {
     public function register(Request $request): \Illuminate\Http\JsonResponse
@@ -27,10 +28,24 @@ class AuthController extends BaseController
                 'email' => $request->email,
                 'password' => $request->password
             ]);
-            return $this->respond( new UserResource($user));
+            return $this->respond(new UserResource($user));
         } catch (Exception $e) {
             $message = 'Oops! Unable to create a new user.';
             return $this->respondError($message, 500);
         }
+    }
+
+    public function login(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $data = [
+            'email' => $request->email,
+            'password' => $request->password
+        ];
+        if (!auth()->attempt($data)) {
+            $message = ['error' => 'Unauthorised'];
+            return $this->respondError($message, 401);
+        }
+        $user = auth()->user();
+        return $this->respond(new UserResource($user));
     }
 }

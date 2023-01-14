@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Exception;
+use Illuminate\Support\Facades\DB;
 
 class Task extends Model
 {
@@ -22,7 +24,7 @@ class Task extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
-   
+
     public function categories()
     {
         return $this->belongsToMany(Category::class, 'task_category');
@@ -34,30 +36,69 @@ class Task extends Model
     }
     public function subTasks()
     {
-    	return $this->hasMany(Task::class);
+        return $this->hasMany(SubTask::class);
     }
 
     //helper that creates tasks and add either categories or specific users to the task_users table
-    public static function create_task($task, $users_assgin = null, $categories = null, $sub_tasks= null)
+    public static function create_task($task, $users_assgin = null, $categories = null, $sub_tasks = null)
     {
+        DB::beginTransaction();
+        try {
+            $task = self::create($task);
 
-        $task = self::create($task);
+            if ($users_assgin) {
+                $task->assign($users_assgin);
+            }
+            if ($categories) {
+                $task->add_categories($categories);
+            }
+            if ($sub_tasks) {
+                $collection = collect($sub_tasks)->map(function ($name) {
+                    return new SubTask(['description' => $name]);
+                })->reject(function ($name) {
+                    return empty($name);
+                });
+                $task->add_sub_tasks($collection);
+            }
 
-        if ($users_assgin) {
-            $task->assign($users_assgin);
+            DB::commit();
+            return $task;
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
-        if ($categories) {
-            $task->add_categories($categories);
+    }
+    public static function update_task($task, array $users_assgin, $categories = null, $sub_tasks = null)
+    {
+        DB::beginTransaction();
+        try {
+            $task->save();
+
+            if ($users_assgin) {
+                $task->users()->sync($users_assgin);
+            }
+
+            if ($categories) {
+                $task->categories()->sync($categories);
+            }
+
+            $task->subTasks()->delete();
+
+            if ($sub_tasks) {
+                //TODO: 
+                $collection = collect($sub_tasks)->map(function ($name) {
+                    return new SubTask(['description' => $name]);
+                })->reject(function ($name) {
+                    return empty($name);
+                });
+                $task->add_sub_tasks($collection);
+            }
+            DB::commit();
+            return $task;
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
-        if ($sub_tasks) {
-            $collection = collect($sub_tasks)->map(function ($name) {
-                return new SubTask(['description'=> $name]);
-            })->reject(function ($name) {
-                return empty($name);
-            });
-            $task->add_sub_tasks($collection);
-        }
-        return $task;
     }
     /**
      * users may subscribe(follow) to a current task
@@ -84,16 +125,17 @@ class Task extends Model
         return $this;
     }
 
-     /**
+    /**
      * @return [type] [description]
      */
-    public function add_categories($categoryIds = null)
+    private function add_categories($categoryIds = null)
     {
         $this->categories()->attach($categoryIds);
         return $this;
     }
 
-    public function add_sub_tasks($sub_tasks) {
+    private function add_sub_tasks($sub_tasks)
+    {
         $this->subTasks()->saveMany($sub_tasks);
         return $this;
     }

@@ -14,19 +14,13 @@ return new class extends Migration {
     {
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('created_by')->constrained()->cascadeOnDelete();
-            $table->foreignId('updated_by')->constrained()->cascadeOnDelete();
+            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreignId('updated_by')->constrained('users')->cascadeOnDelete()->cascadeOnUpdate();
             $table->string('title');
             $table->text('description');
             $table->date('due_date');
-            $table->dateTime('actual_end_date')->nullable();;
+            $table->dateTime('actual_end_date')->nullable();
             $table->timestamps();
-
-            $table->foreign('created_by')->references('id')->on('users')
-                ->onUpdate('cascade')->onDelete('cascade');
-
-            $table->foreign('updated_by')->references('id')->on('users')
-                ->onUpdate('cascade')->onDelete('cascade');
         });
     }
 

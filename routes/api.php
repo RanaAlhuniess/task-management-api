@@ -22,4 +22,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::resource('tasks', TaskController::class);
     Route::resource('categories', CategoryController::class);
+     //Get 'me' object
+     Route::get('users/me', [UserController::class,'index']);
+    //Get all users that can be assigned a task
+    Route::get('users/all', [UserController::class,'getAllUsers']);
 });

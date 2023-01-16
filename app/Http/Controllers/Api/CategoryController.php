@@ -19,7 +19,8 @@ class CategoryController extends BaseController
      */
     public function index()
     {
-        return $this->respond(CategoryResource::collection(Category::latest()->get()));
+        $categories = Category::latest()->filter(request(['search']))->get();
+        return $this->respond(CategoryResource::collection($categories));
     }
     /**
      * Display the specified resource.
@@ -84,7 +85,7 @@ class CategoryController extends BaseController
             return $this->respondError($message, 500);
         }
     }
-     /**
+    /**
      * Remove the specified resource from storage.
      *
      * @param Category $category

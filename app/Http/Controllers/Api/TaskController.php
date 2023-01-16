@@ -22,7 +22,8 @@ class TaskController extends BaseController
      */
     public function index()
     {
-        return TaskResource::collection(Task::with('categories')->paginate());
+        $tasks = Task::with('categories')->latest()->filter(request(['search']))->paginate()->withQueryString();
+        return TaskResource::collection($tasks);
     }
     /**
      * Store a newly created resource in storage.

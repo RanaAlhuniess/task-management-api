@@ -39,6 +39,16 @@ class Task extends Model
         return $this->hasMany(SubTask::class);
     }
 
+    public function scopeFilter($query, array $filters)
+    {
+        $query->when($filters['search'] ?? false, fn($query, $search) =>
+            $query->where(fn($query) =>
+                $query->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('description', 'like', '%' . $search . '%')
+            )
+        );
+    }
+
     //helper that creates tasks and add either categories or specific users to the task_users table
     public static function create_task($task, $users_assgin = null, $categories = null, $sub_tasks = null)
     {

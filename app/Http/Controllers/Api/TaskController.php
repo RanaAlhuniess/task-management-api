@@ -41,9 +41,9 @@ class TaskController extends BaseController
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function store(Request $request)
+    public function store(Request $request): \Illuminate\Http\JsonResponse
     {
         $categories = json_decode($request->input('categories'));
         $users = json_decode($request->input('members'));
@@ -61,7 +61,7 @@ class TaskController extends BaseController
                 'description' => $request->input('description'),
                 'due_date' => date_format(date_create($request->input('due_date')), 'Y-m-d')
             ], $task_users, $task_categories, $sub_tasks);
-            return $this->respond(new TaskResource($task));
+            return $this->respond(new TaskResource($task), 201);
         } catch (Exception $e) {
             $message = 'Oops! Unable to create a new Task.';
             return $this->respondError($message, 500);

@@ -47,6 +47,12 @@ class AuthController extends BaseController
             return $this->respondError($message, 401);
         }
         $user = auth()->user();
+        
         return $this->respond((new UserResource($user))->withToken(true));
+    }
+    public function logout()
+    {
+        auth()->logout();
+        return $this->respond(null, 204);
     }
 }

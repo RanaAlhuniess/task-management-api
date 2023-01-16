@@ -25,6 +25,18 @@ class TaskController extends BaseController
         $tasks = Task::with('categories')->latest()->filter(request(['search']))->paginate()->withQueryString();
         return TaskResource::collection($tasks);
     }
+
+    /* Display the specified resource.
+    *
+    * @param  \App\Task  $task
+    * @return \Illuminate\Http\Response
+    */
+
+    public function show(Task $task)
+    {
+        $task->load(["categories", "users", "subTasks"]);
+        return $this->respond(new TaskResource($task));
+    }
     /**
      * Store a newly created resource in storage.
      *

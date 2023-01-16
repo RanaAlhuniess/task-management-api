@@ -6,6 +6,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class UserResource extends JsonResource
 {
+    protected $withToken = false;
+    public function withToken(bool $value){
+        $this->withToken = $value;
+        return $this;
+    }
+     
     /**
      * Transform the resource into an array.
      *
@@ -15,8 +21,12 @@ class UserResource extends JsonResource
     public function toArray($request)
     {
         return [
+            'id' => $this->id,
             'name' => $this->name,
-            'token' => $this->createToken('accessToken')->accessToken,
+            'email' => $this->email,
+            $this->mergeWhen($this->withToken, [
+                'token' => $this->createToken('accessToken')->accessToken,
+            ]),
         ];
     }
 }

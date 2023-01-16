@@ -28,9 +28,10 @@ class AuthController extends BaseController
                 'email' => $request->email,
                 'password' => $request->password
             ]);
-            return $this->respond(new UserResource($user));
+            return $this->respond((new UserResource($user))->withToken(true));
         } catch (Exception $e) {
             $message = 'Oops! Unable to create a new user.';
+
             return $this->respondError($message, 500);
         }
     }
@@ -46,6 +47,6 @@ class AuthController extends BaseController
             return $this->respondError($message, 401);
         }
         $user = auth()->user();
-        return $this->respond(new UserResource($user));
+        return $this->respond((new UserResource($user))->withToken(true));
     }
 }

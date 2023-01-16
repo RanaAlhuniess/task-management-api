@@ -45,9 +45,17 @@ class TaskController extends BaseController
      */
     public function store(Request $request): \Illuminate\Http\JsonResponse
     {
-        $categories = json_decode($request->input('categories'));
-        $users = json_decode($request->input('members'));
-        $sub_tasks = json_decode($request->input('sub_tasks'));
+        $validator = Validator::make($request->all(), [
+            'title'       => 'required|max:255',
+            'description' => 'required|min:40',
+            'due_date' => 'required|date',
+        ]);
+
+        if ($validator->fails())
+            return $this->respondError($validator->errors(), 422);
+        $categories = $request->categories;
+        $users = $request->members;
+        $sub_tasks = $request->sub_tasks;
 
         $task_categories = !empty($categories) ? $categories : null;
         $task_users = !empty($users) ? $users : null;
@@ -57,13 +65,14 @@ class TaskController extends BaseController
             $task = Task::create_task([
                 'created_by' => auth()->id(),
                 'updated_by' => auth()->id(),
-                'title' => $request->input('title'),
-                'description' => $request->input('description'),
-                'due_date' => date_format(date_create($request->input('due_date')), 'Y-m-d')
+                'title' => $request->title,
+                'description' => $request->description,
+                'due_date' => date_format(date_create($request->due_date), 'Y-m-d')
             ], $task_users, $task_categories, $sub_tasks);
-            return $this->respond(new TaskResource($task), 201);
+            return $this->respond(new TaskResource($task),201);
         } catch (Exception $e) {
             $message = 'Oops! Unable to create a new Task.';
+            var_dump($e->getMessage());
             return $this->respondError($message, 500);
         }
     }

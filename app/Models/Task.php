@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Jobs\SendEmailJob;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Exception;
@@ -10,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 class Task extends Model
 {
     use HasFactory;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -20,6 +23,7 @@ class Task extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
     public function updatedBy()
     {
         return $this->belongsTo(User::class, 'updated_by');
@@ -34,18 +38,33 @@ class Task extends Model
     {
         return $this->belongsToMany(User::class);
     }
+
     public function subTasks()
     {
         return $this->hasMany(SubTask::class);
     }
 
+    public static function boot()
+    {
+
+        parent::boot();
+        /**
+         * Write code on Method
+         *
+         * @return
+         */
+        static::created(function ($item) {
+            $due_date = Carbon::parse($item->due_date);
+            if($item->users())
+                dispatch(new SendEmailJob($item))->delay($due_date);;
+        });
+    }
+
     public function scopeFilter($query, array $filters)
     {
-        $query->when($filters['search'] ?? false, fn($query, $search) =>
-            $query->where(fn($query) =>
-                $query->where('title', 'like', '%' . $search . '%')
-                    ->orWhere('description', 'like', '%' . $search . '%')
-            )
+        $query->when($filters['search'] ?? false, fn($query, $search) => $query->where(fn($query) => $query->where('title', 'like', '%' . $search . '%')
+            ->orWhere('description', 'like', '%' . $search . '%')
+        )
         );
     }
 
@@ -78,6 +97,7 @@ class Task extends Model
             throw $e;
         }
     }
+
     public static function update_task($task, array $users_assgin, $categories = null, $sub_tasks = null)
     {
         DB::beginTransaction();
@@ -95,7 +115,7 @@ class Task extends Model
             $task->subTasks()->delete();
 
             if ($sub_tasks) {
-                //TODO: 
+                //TODO:
                 $collection = collect($sub_tasks)->map(function ($name) {
                     return new SubTask(['description' => $name]);
                 })->reject(function ($name) {
@@ -110,6 +130,7 @@ class Task extends Model
             throw $e;
         }
     }
+
     /**
      * users may subscribe(follow) to a current task
      * @return [type] [description]
@@ -148,5 +169,9 @@ class Task extends Model
     {
         $this->subTasks()->saveMany($sub_tasks);
         return $this;
+    }
+
+    public function mark_as_ended() {
+        $this->update(['is_end' => true]);
     }
 }

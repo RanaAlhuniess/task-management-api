@@ -20,6 +20,7 @@ return new class extends Migration {
             $table->text('description');
             $table->date('due_date');
             $table->dateTime('actual_end_date')->nullable();
+            $table->boolean('is_end')->default(false);
             $table->timestamps();
         });
     }
